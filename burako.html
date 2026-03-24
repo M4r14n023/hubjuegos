@@ -19,7 +19,16 @@
 
         <div id="start-screen">
             <h2 style="color: var(--neon-gold); text-align: center; margin-bottom: 20px;">SALA DE ESPERA</h2>
-            <input type="text" id="my-name" placeholder="Tu Nombre" style="margin-bottom: 15px;">
+            <input type="text" id="my-name" placeholder="Tu Nombre" style="margin-bottom: 15px; width: 100%; padding: 10px;">
+            
+            <label style="color: var(--neon-green); font-size: 0.9rem; display: block; margin-bottom: 5px; text-align: left;">Puntaje para ganar:</label>
+            <select id="target-score" style="margin-bottom: 20px; width: 100%; padding: 10px; background: #111; color: var(--neon-gold); border: 2px solid var(--neon-green); border-radius: 5px; font-family: monospace; font-size: 1rem;">
+                <option value="2000">2000 Puntos (Rápida)</option>
+                <option value="3000" selected>3000 Puntos (Clásico)</option>
+                <option value="4000">4000 Puntos</option>
+                <option value="5000">5000 Puntos (Maratón)</option>
+            </select>
+
             <button id="btn-crear-sala" class="btn-success" style="width: 100%;">Crear Partida de Burako</button>
             
             <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">
@@ -27,6 +36,18 @@
                 <div id="rooms-list"></div>
             </div>
         </div>
+
+        <div id="mesa-burako" class="hidden">
+            
+            <div id="scoreboard" style="display: flex; justify-content: space-between; padding: 10px 20px; background: rgba(0,0,0,0.7); border: 2px solid var(--neon-gold); margin-bottom: 10px; border-radius: 8px; font-weight: bold; font-size: 1.1rem;">
+                <div style="color: var(--neon-green);">HOST: <span id="score-host">0</span></div>
+                <div style="color: white; font-size: 0.9rem; opacity: 0.8; padding-top: 3px;">META: <span id="score-target">3000</span></div>
+                <div style="color: #ff3333;">GUEST: <span id="score-guest">0</span></div>
+            </div>
+
+            <div id="zona-rival" class="atril-rival">
+                <p class="nombre-jugador">Rival (Esperando...)</p>
+            </div>
 
         <div id="mesa-burako" class="hidden">
             <div id="zona-rival" class="atril-rival">

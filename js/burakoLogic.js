@@ -366,13 +366,18 @@ document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
     const m2 = mazo.splice(0, 11);
     pozo = [...mazo];
 
+// (dentro del listener de btn-crear-sala, justo antes de salaRef.set)
+    const metaPuntos = parseInt(document.getElementById('target-score').value);
+
     // Subimos el estado inicial
     const salaRef = db.ref(`burako_salas/${roomCode}`);
     salaRef.set({
         hostName: myName,
         guestName: "",
         estado: "esperando",
-        timestamp: Date.now(), // <-- Sello de tiempo para limpiar salas viejas
+        targetScore: metaPuntos, // Guardamos la meta elegida
+        scores: { host: 0, guest: 0 }, // Arrancan 0 a 0
+        timestamp: Date.now(),
         fichas: {
             host: manoH,
             guest: manoG,
@@ -409,6 +414,16 @@ function escucharPartida() {
             alert("La conexión con la sala se perdió.");
             location.reload();
             return;
+        }
+
+        // --- NUEVO: ACTUALIZAR EL MARCADOR VISUAL ---
+        // Esto lee los puntos de Firebase y los dibuja en la pantalla
+        if (data.targetScore) {
+            document.getElementById('score-target').innerText = data.targetScore;
+        }
+        if (data.scores) {
+            document.getElementById('score-host').innerText = data.scores.host;
+            document.getElementById('score-guest').innerText = data.scores.guest;
         }
 
         // Si soy el Host y recién entra el Guest, me entero aquí:
