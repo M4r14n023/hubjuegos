@@ -1,19 +1,20 @@
 {
-  "name": "Tutti Frutti Arcade",
-  "short_name": "TuttiFrutti",
-  "description": "El clásico juego de palabras, ahora en versión Arcade Retro.",
+  "name": "Hub Universitario",
+  "short_name": "Hub Juegos",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1a012d",
-  "theme_color": "#ff00ff",
+  "background_color": "#0f0c29",
+  "theme_color": "#00ffff",
+  "orientation": "portrait",
+  "scope": "./",
   "icons": [
     {
-      "src": "img/logo.png",
+      "src": "img/hub.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "img/logo.png",
+      "src": "img/hub.png",
       "sizes": "512x512",
       "type": "image/png"
     }

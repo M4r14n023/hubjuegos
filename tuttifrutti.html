@@ -8,6 +8,19 @@
     
     <link rel="apple-touch-icon" href="img/logo.png">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0c29">
+
+    <script>
+        if (("standalone" in window.navigator) && window.navigator.standalone) {
+            document.addEventListener('click', function(event) {
+                var a = event.target.closest('a');
+                if (a && a.href && !a.href.startsWith('http')) {
+                    event.preventDefault();
+                    window.location = a.href;
+                }
+            }, false);
+        }
+    </script>
     
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Tutti Frutti">

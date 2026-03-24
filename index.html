@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="css/hub.css">
     <link rel="icon" type="image/png" href="img/hub.png">
     <link rel="apple-touch-icon" href="img/hub.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0c29">
+
+    <script>
+        if (("standalone" in window.navigator) && window.navigator.standalone) {
+            document.addEventListener('click', function(event) {
+                var a = event.target.closest('a');
+                if (a && a.href && !a.href.startsWith('http')) {
+                    event.preventDefault();
+                    window.location = a.href;
+                }
+            }, false);
+        }
+    </script>
 </head>
 <body>
 
@@ -33,7 +47,7 @@
         </div>
         
         <footer>
-            <p>Versión 2.3 - Desarrollado para jugar con Gordito</p>
+            <p>Versión 2.4 - Desarrollado para jugar con Gordito</p>
         </footer>
     </div>
 
