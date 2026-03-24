@@ -265,9 +265,11 @@ function intentarAgregarFichas(juegoDiv) {
 // 5. FIREBASE Y MULTIJUGADOR (LOBBY)
 // ========================================================
 
+const TIEMPO_EXPIRACION = 10 * 60 * 1000; // 10 minutos en milisegundos
+
 // Escuchar partidas abiertas en "burako_salas"
 db.ref('burako_salas').on('value', (snapshot) => {
-    if (roomCode) return; // Si ya estoy en una sala, ignoro el lobby general
+    if (roomCode) return; // Si ya estoy en una sala, ignoro el lobby
 
     const salas = snapshot.val() || {};
     const listaUI = document.getElementById('rooms-list');
@@ -275,8 +277,15 @@ db.ref('burako_salas').on('value', (snapshot) => {
     
     listaUI.innerHTML = ""; 
     let salasDisponibles = 0;
+    const ahora = Date.now();
 
     for (const [codigo, data] of Object.entries(salas)) {
+        // LIMPIEZA: Si la sala tiene más de 10 minutos y sigue "esperando", la borramos
+        if (data.estado === "esperando" && (ahora - data.timestamp > TIEMPO_EXPIRACION)) {
+            db.ref(`burako_salas/${codigo}`).remove();
+            continue;
+        }
+
         if (data.estado === "esperando") {
             salasDisponibles++;
             const btn = document.createElement('button');
@@ -288,13 +297,51 @@ db.ref('burako_salas').on('value', (snapshot) => {
             btn.style.borderColor = "var(--neon-green)";
             btn.innerText = `Unirse a ${data.hostName}`;
             
-            // Función para el Jugador 2 (Lo conectaremos en el siguiente paso)
-            btn.onclick = () => alert("¡Próximamente unirse a la sala " + codigo + "!"); 
+            // Acción para el Jugador 2 (Guest)
+            btn.onclick = () => unirseASala(codigo, data); 
             listaUI.appendChild(btn);
         }
     }
-    if (salasDisponibles === 0) listaUI.innerHTML = '<p style="color: #666; text-align: center; font-family: monospace;">Sin partidas activas. ¡Crea una!</p>';
+    
+    if (salasDisponibles === 0) {
+        listaUI.innerHTML = '<p style="color: #666; text-align: center; font-family: monospace;">Sin partidas activas. ¡Crea una!</p>';
+    }
 });
+
+// LÓGICA PARA UNIRSE A UNA SALA (GUEST)
+function unirseASala(codigo, data) {
+    const inputName = document.getElementById('my-name');
+    myName = inputName.value.trim();
+    
+    if (!myName) {
+        alert("Por favor, ingresa tu nombre antes de unirte a la partida.");
+        return;
+    }
+
+    myRole = 'guest';
+    roomCode = codigo;
+    rivalName = data.hostName;
+
+    // 1. Avisamos a Firebase que entramos y cambiamos el estado
+    db.ref(`burako_salas/${roomCode}`).update({
+        guestName: myName,
+        estado: "jugando"
+    });
+
+    // 2. Cargamos nuestra mano (la que el Host preparó para el Guest)
+    // Importante: Si Firebase devuelve un array vacío, lo forzamos a ser array
+    manoJugador1 = data.fichas.guest || []; 
+
+    // 3. Preparamos la mesa visualmente
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('mesa-burako').classList.remove('hidden');
+    
+    document.querySelector('.nombre-jugador').innerText = `${myName} (Tú)`;
+    document.querySelector('.atril-rival .nombre-jugador').innerText = `${rivalName} (11 fichas)`;
+    
+    renderizarAtril();
+    escucharPartida(); // Empezamos a escuchar los movimientos
+}
 
 // CREAR SALA (HOST)
 document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
@@ -309,21 +356,23 @@ document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
     myRole = 'host';
     roomCode = Math.random().toString(36).substring(2, 6).toUpperCase(); 
 
-    // Fabricamos, mezclamos y dividimos las fichas
+    // Fabricamos, mezclamos y dividimos
     const fichasOrdenadas = generarFichas();
     mazo = mezclar(fichasOrdenadas);
     
-    const manoH = mazo.splice(0, 11); // Mano Host
-    const manoG = mazo.splice(0, 11); // Mano Guest
-    const m1 = mazo.splice(0, 11);    // Muerto 1
-    const m2 = mazo.splice(0, 11);    // Muerto 2
-    pozo = [...mazo];                 // Lo que sobra al pozo local
+    const manoH = mazo.splice(0, 11);
+    const manoG = mazo.splice(0, 11);
+    const m1 = mazo.splice(0, 11);
+    const m2 = mazo.splice(0, 11);
+    pozo = [...mazo];
 
-    // Subimos TODO el estado inicial a Firebase
-    db.ref(`burako_salas/${roomCode}`).set({
+    // Subimos el estado inicial
+    const salaRef = db.ref(`burako_salas/${roomCode}`);
+    salaRef.set({
         hostName: myName,
         guestName: "",
         estado: "esperando",
+        timestamp: Date.now(), // <-- Sello de tiempo para limpiar salas viejas
         fichas: {
             host: manoH,
             guest: manoG,
@@ -335,16 +384,44 @@ document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
         mesa: [] 
     });
 
-    // Seteamos la mano del Host en su variable local para que pueda jugar
+    // TRUCO DE MAGIA: Si el Host cierra la página, la sala se borra sola
+    salaRef.onDisconnect().remove();
+
     manoJugador1 = manoH;
 
-    // Ocultamos el lobby y mostramos la mesa
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('mesa-burako').classList.remove('hidden');
     document.querySelector('.nombre-jugador').innerText = `${myName} (Tú)`;
     
-    // Mostramos visualmente las fichas del Host
     renderizarAtril();
+    escucharPartida(); // El Host también tiene que escuchar si entra el rival
 
     alert(`¡Sala creada! Código: ${roomCode}. Esperando a que alguien se una...`);
 });
+
+// ESCUCHAR CAMBIOS EN LA PARTIDA (PARA AMBOS)
+function escucharPartida() {
+    db.ref(`burako_salas/${roomCode}`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        // Si no hay data, es porque el otro jugador cerró/borró la sala
+        if (!data) {
+            alert("La conexión con la sala se perdió.");
+            location.reload();
+            return;
+        }
+
+        // Si soy el Host y recién entra el Guest, me entero aquí:
+        if (myRole === 'host' && data.guestName !== "" && rivalName === "") {
+            rivalName = data.guestName;
+            document.querySelector('.atril-rival .nombre-jugador').innerText = `${rivalName} (11 fichas)`;
+            
+            // Como el juego ya empezó, cancelamos la autodestrucción por desconexión del lobby
+            db.ref(`burako_salas/${roomCode}`).onDisconnect().cancel();
+            
+            alert(`¡${rivalName} se ha unido a la partida! ¡Que comience el juego!`);
+        }
+        
+        // (Próximamente: aquí sincronizaremos el pozo, los descartes y las jugadas en la mesa)
+    });
+}
