@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burako Arcade</title>
+    
+    <link rel="icon" type="image/png" href="img/hub.png">
+    <link rel="apple-touch-icon" href="img/hub.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="stylesheet" href="css/burako.css?v=1.1">
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="logo-container">
+            <img src="img/burako.png" alt="Burako Arcade" class="arcade-logo">
+        </div>
+
+        <div id="mesa-burako">
+            <div id="zona-rival" class="atril-rival">
+                <p class="nombre-jugador">Rival (11 fichas)</p>
+            </div>
+
+            <div id="zona-central">
+                <div class="panel-robo">
+                    <div id="pozo" class="ficha reverso">Pozo</div>
+                    <div id="descarte" class="espacio-vacio">Descarte</div>
+                </div>
+                
+                <div id="juegos-bajados">
+                    <p style="color: rgba(0, 255, 255, 0.5); text-align: center; width: 100%; font-family: monospace;">[ ZONA DE CANASTAS ]</p>
+                </div>
+            </div>
+
+            <div id="zona-jugador">
+                <p class="nombre-jugador">Tu Atril</p>
+                <div id="mi-atril" class="atril">
+                    </div>
+                <div class="controles">
+                    <button id="btn-bajar-juego" class="btn-success">Bajar Juego</button>
+                    <button id="btn-descartar" class="danger">Descartar</button>
+                </div>
+            </div>
+        </div>
+        
+        <p class="game-version">v1.1</p>
+    </div>
+
+    <script src="js/burakoLogic.js?v=1.1"></script>
+</body>
+</html>
