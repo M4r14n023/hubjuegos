@@ -286,3 +286,34 @@ textarea { resize: vertical; min-height: 80px; }
     .modal-content { padding: 15px; border-width: 4px; }
     .big-number, #letra-revelada { font-size: 6rem !important; }
 }
+/* --- BOTÓN VOLVER AL HUB (TUTTI FRUTTI) --- */
+.btn-back-hub {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    padding: 8px 15px;
+    background: rgba(255, 0, 255, 0.1);
+    color: #ff00ff;
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border: 1px solid #ff00ff;
+    border-radius: 5px;
+    z-index: 1000;
+    text-transform: uppercase;
+    box-shadow: 0 0 5px rgba(255, 0, 255, 0.5);
+    transition: all 0.2s ease;
+}
+
+.btn-back-hub:hover {
+    background: #ff00ff;
+    color: #fff;
+    box-shadow: 0 0 15px #ff00ff;
+    transform: scale(1.05);
+}
+
+/* Ajuste para celulares */
+@media (max-width: 600px) {
+    .btn-back-hub { top: 10px; left: 10px; padding: 5px 10px; font-size: 0.8rem; }
+}
