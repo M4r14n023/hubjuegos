@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Burako Arcade</title>
-    
     <link rel="icon" type="image/png" href="img/hub.png">
     <link rel="apple-touch-icon" href="img/hub.png">
     <meta name="mobile-web-app-capable" content="yes">
-    
-    <link rel="stylesheet" href="css/burako.css?v=1.1">
+    <link rel="stylesheet" href="css/burako.css?v=1.2">
 </head>
 <body>
 
@@ -18,9 +16,20 @@
             <img src="img/burako.png" alt="Burako Arcade" class="arcade-logo">
         </div>
 
-        <div id="mesa-burako">
+        <div id="start-screen">
+            <h2 style="color: var(--neon-gold); text-align: center; margin-bottom: 20px;">SALA DE ESPERA</h2>
+            <input type="text" id="my-name" placeholder="Tu Nombre" style="margin-bottom: 15px;">
+            <button id="btn-crear-sala" class="btn-success" style="width: 100%;">Crear Partida de Burako</button>
+            
+            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">
+                <p style="color: var(--neon-green); text-align: center; margin-bottom: 10px;">Partidas Abiertas:</p>
+                <div id="rooms-list"></div>
+            </div>
+        </div>
+
+        <div id="mesa-burako" class="hidden">
             <div id="zona-rival" class="atril-rival">
-                <p class="nombre-jugador">Rival (11 fichas)</p>
+                <p class="nombre-jugador">Rival (Esperando...)</p>
             </div>
 
             <div id="zona-central">
@@ -28,7 +37,6 @@
                     <div id="pozo" class="ficha reverso">Pozo</div>
                     <div id="descarte" class="espacio-vacio">Descarte</div>
                 </div>
-                
                 <div id="juegos-bajados">
                     <p style="color: rgba(0, 255, 255, 0.5); text-align: center; width: 100%; font-family: monospace;">[ ZONA DE CANASTAS ]</p>
                 </div>
@@ -36,8 +44,7 @@
 
             <div id="zona-jugador">
                 <p class="nombre-jugador">Tu Atril</p>
-                <div id="mi-atril" class="atril">
-                    </div>
+                <div id="mi-atril" class="atril"></div>
                 <div class="controles">
                     <button id="btn-bajar-juego" class="btn-success">Bajar Juego</button>
                     <button id="btn-descartar" class="danger">Descartar</button>
@@ -45,9 +52,29 @@
             </div>
         </div>
         
-        <p class="game-version">v1.1</p>
+        <p class="game-version">v1.2</p>
     </div>
 
-    <script src="js/burakoLogic.js?v=1.1"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script>
+        // USA LA CONFIGURACIÓN DE TU HUB UNIVERSITARIO AQUÍ
+        const firebaseConfig = {
+            apiKey: "AIzaSyASMqVmei3fLw04imF6BD53YeogyjhP1xo",
+            authDomain: "tutti-frutti-7997e.firebaseapp.com",
+            projectId: "tutti-frutti-7997e",
+            storageBucket: "tutti-frutti-7997e.firebasestorage.app",
+            databaseURL: "https://tutti-frutti-7997e-default-rtdb.firebaseio.com",
+            messagingSenderId: "434522659140",
+            appId: "1:434522659140:web:dafab860b02e1a21e9df11"
+        };
+        // Nota: Asegurate de que estos datos sean los de tu Firebase actual. 
+        // Si creaste uno nuevo exclusivo para el Hub, reemplazalos.
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+    </script>
+
+    <script src="js/burakoLogic.js?v=1.2"></script>
 </body>
 </html>
