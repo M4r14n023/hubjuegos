@@ -3,45 +3,31 @@
 const COLORES = ['rojo', 'azul', 'amarillo', 'negro'];
 const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
-let mazo = [];
-let manoJugador1 = []; 
-let pozo = [];
-let descarte = []; 
-
-// Ahora las mesas y los muertos están separados
-let mesaMia = []; 
-let mesaRival = [];
-let muertoMio = [];
+let mazo = []; let manoJugador1 = []; let pozo = []; let descarte = []; 
+let mesaMia = []; let mesaRival = []; let muertoMio = [];
 let estadoMuertos = { host: false, guest: false };
 let diccionarioFichas = {}; 
 
-let roomCode = null;
-let myRole = null; 
-let myName = "";
-let rivalName = "";
-let turnoActual = null; 
-let faseTurno = 'robar'; 
+let roomCode = null; let myRole = null; let myName = ""; let rivalName = "";
+let turnoActual = null; let faseTurno = 'robar'; 
 
 // ========================================================
 // 1. FABRICAR Y MEZCLAR FICHAS
 // ========================================================
 function generarFichas() {
-    let nuevasFichas = [];
-    let idCounter = 0; 
+    let nuevasFichas = []; let idCounter = 0; 
     for (let i = 0; i < 2; i++) {
         COLORES.forEach(color => {
             NUMEROS.forEach(numero => {
                 let ficha = { id: `ficha-${idCounter++}`, numero: numero, color: color, esComodinReal: false };
-                nuevasFichas.push(ficha);
-                diccionarioFichas[ficha.id] = ficha; 
+                nuevasFichas.push(ficha); diccionarioFichas[ficha.id] = ficha; 
             });
         });
     }
     let comodin1 = { id: `ficha-${idCounter++}`, numero: 0, color: 'comodin', esComodinReal: true };
     let comodin2 = { id: `ficha-${idCounter++}`, numero: 0, color: 'comodin', esComodinReal: true };
     nuevasFichas.push(comodin1, comodin2);
-    diccionarioFichas[comodin1.id] = comodin1; 
-    diccionarioFichas[comodin2.id] = comodin2; 
+    diccionarioFichas[comodin1.id] = comodin1; diccionarioFichas[comodin2.id] = comodin2; 
     return nuevasFichas;
 }
 
@@ -55,7 +41,7 @@ function mezclar(array) {
 }
 
 // ========================================================
-// 2. RENDERIZADO VISUAL, ARRASTRE Y SELECCIÓN
+// 2. RENDERIZADO VISUAL Y ARRASTRE UNIFICADO
 // ========================================================
 let fichasSeleccionadas = [];
 
@@ -66,16 +52,12 @@ function renderizarAtril() {
     
     manoJugador1.forEach(ficha => {
         const fichaDiv = document.createElement('div');
-        fichaDiv.className = `ficha color-${ficha.color}`;
-        fichaDiv.id = ficha.id;
+        fichaDiv.className = `ficha color-${ficha.color}`; fichaDiv.id = ficha.id;
         fichaDiv.innerText = ficha.esComodinReal ? "★" : ficha.numero;
-        
-        if (fichasSeleccionadas.some(f => f.id === ficha.id)) {
-            fichaDiv.classList.add('seleccionada');
-        }
+        if (fichasSeleccionadas.some(f => f.id === ficha.id)) fichaDiv.classList.add('seleccionada');
         
         fichaDiv.addEventListener('click', () => toggleSeleccion(ficha, fichaDiv));
-        aplicarArrastre(fichaDiv, ficha);
+        aplicarArrastre(fichaDiv, ficha, 'mano', null); // Habilitamos mover en mano
         atrilUI.appendChild(fichaDiv);
     });
 }
@@ -86,8 +68,7 @@ function renderizarDescarte() {
     descarteDiv.innerHTML = '';
     
     if (descarte.length === 0) {
-        descarteDiv.classList.add('espacio-vacio');
-        descarteDiv.innerText = "Descarte";
+        descarteDiv.classList.add('espacio-vacio'); descarteDiv.innerText = "Descarte";
     } else {
         descarteDiv.classList.remove('espacio-vacio');
         const ultimaFicha = descarte[descarte.length - 1]; 
@@ -99,32 +80,35 @@ function renderizarDescarte() {
 }
 
 function renderizarMesas() {
-    // Mi mesa
     const divMisJuegos = document.getElementById('mis-juegos');
     if (divMisJuegos) {
         divMisJuegos.innerHTML = '<p style="color: var(--neon-green); text-align: center; font-size: 0.8rem; margin-bottom: 10px;">[ MIS JUEGOS ]</p>';
         mesaMia.forEach((grupo, index) => {
-            const nuevoJuego = document.createElement('div');
-            nuevoJuego.className = 'juego-en-mesa';
-            nuevoJuego.addEventListener('click', () => intentarAgregarFichas(index)); // Solo puedo agregar a MIS juegos
+            const nuevoJuego = document.createElement('div'); nuevoJuego.className = 'juego-en-mesa';
+            nuevoJuego.addEventListener('click', (e) => {
+                // Si tocamos el contenedor (y no una ficha para arrastrar), intentamos agregar
+                if(e.target === nuevoJuego) intentarAgregarFichas(index);
+            }); 
+            
             grupo.forEach(fichaObj => {
                 const fichaDOM = document.createElement('div');
-                fichaDOM.className = `ficha color-${fichaObj.color}`;
+                fichaDOM.className = `ficha color-${fichaObj.color}`; fichaDOM.id = fichaObj.id;
                 fichaDOM.innerText = fichaObj.esComodinReal ? "★" : fichaObj.numero;
+                
+                // Habilitamos mover fichas DENTRO de mis juegos bajados
+                aplicarArrastre(fichaDOM, fichaObj, 'mesa', index);
+                
                 nuevoJuego.appendChild(fichaDOM);
             });
             divMisJuegos.appendChild(nuevoJuego);
         });
     }
 
-    // Mesa del Rival
     const divRival = document.getElementById('juegos-rival');
     if (divRival) {
         divRival.innerHTML = '<p style="color: #ff3333; text-align: center; font-size: 0.8rem; margin-bottom: 10px;">[ JUEGOS RIVAL ]</p>';
         mesaRival.forEach((grupo) => {
-            const nuevoJuego = document.createElement('div');
-            nuevoJuego.className = 'juego-en-mesa';
-            // Al rival no se le pueden agregar fichas, así que no tiene evento click
+            const nuevoJuego = document.createElement('div'); nuevoJuego.className = 'juego-en-mesa';
             grupo.forEach(fichaObj => {
                 const fichaDOM = document.createElement('div');
                 fichaDOM.className = `ficha color-${fichaObj.color}`;
@@ -141,71 +125,88 @@ function toggleSeleccion(fichaObj, elementoFicha) {
     if (!estaEnMano) return; 
     const index = fichasSeleccionadas.findIndex(f => f.id === fichaObj.id);
     if (index > -1) {
-        fichasSeleccionadas.splice(index, 1);
-        elementoFicha.classList.remove('seleccionada');
+        fichasSeleccionadas.splice(index, 1); elementoFicha.classList.remove('seleccionada');
     } else {
-        fichasSeleccionadas.push(fichaObj);
-        elementoFicha.classList.add('seleccionada');
+        fichasSeleccionadas.push(fichaObj); elementoFicha.classList.add('seleccionada');
     }
 }
 
-// EL TRUCO PARA CELULARES: pointerEvents = 'none'
-function aplicarArrastre(fichaDiv, fichaObj) {
-    // PC
+// --- MOTOR DE ARRASTRE UNIFICADO (ATRIL Y MESA) ---
+let draggedFichaId = null;
+
+function aplicarArrastre(fichaDiv, fichaObj, zona, indexGrupo) {
+    fichaDiv.dataset.zona = zona;
+    fichaDiv.dataset.index = indexGrupo;
+
+    // EVENTOS PC
     fichaDiv.draggable = true;
     fichaDiv.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', fichaObj.id);
+        draggedFichaId = fichaObj.id;
+        e.dataTransfer.setData('text/plain', JSON.stringify({id: fichaObj.id, zona: zona, index: indexGrupo}));
         setTimeout(() => fichaDiv.style.opacity = '0.5', 0);
     });
-    fichaDiv.addEventListener('dragend', () => fichaDiv.style.opacity = '1');
+    fichaDiv.addEventListener('dragend', () => { fichaDiv.style.opacity = '1'; draggedFichaId = null; });
     fichaDiv.addEventListener('dragover', (e) => e.preventDefault());
     fichaDiv.addEventListener('drop', (e) => {
         e.preventDefault();
-        moverFichaEnAtril(e.dataTransfer.getData('text/plain'), fichaObj.id);
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        procesarMovimiento(data.id, data.zona, data.index, fichaObj.id, zona, indexGrupo);
     });
 
-    // Celular
-    fichaDiv.addEventListener('touchstart', (e) => {}, {passive: true});
+    // EVENTOS CELULAR (Táctil Mejorado)
+    fichaDiv.addEventListener('touchstart', (e) => { draggedFichaId = fichaObj.id; fichaDiv.dataset.dragging = "true"; }, {passive: true});
     fichaDiv.addEventListener('touchmove', (e) => {
+        if (!draggedFichaId) return;
         e.preventDefault(); 
         const touch = e.touches[0];
-        fichaDiv.style.position = 'fixed'; // Fixed funciona mejor para drag
-        fichaDiv.style.left = (touch.clientX - 20) + 'px';
-        fichaDiv.style.top = (touch.clientY - 30) + 'px';
+        fichaDiv.style.position = 'fixed';
+        fichaDiv.style.left = (touch.clientX - 20) + 'px'; fichaDiv.style.top = (touch.clientY - 30) + 'px';
         fichaDiv.style.zIndex = 1000;
-        fichaDiv.style.pointerEvents = 'none'; // CRUCIAL para que el sensor "vea" lo que hay abajo
+        fichaDiv.style.pointerEvents = 'none'; // Clave para que el teléfono lea lo que hay debajo del dedo
     }, {passive: false});
 
     fichaDiv.addEventListener('touchend', (e) => {
+        if (!draggedFichaId) return;
+        fichaDiv.dataset.dragging = "false";
         fichaDiv.style.position = ''; fichaDiv.style.left = ''; fichaDiv.style.top = ''; 
-        fichaDiv.style.zIndex = ''; fichaDiv.style.pointerEvents = 'auto'; // Restauramos
+        fichaDiv.style.zIndex = ''; fichaDiv.style.pointerEvents = 'auto'; 
         
         const touch = e.changedTouches[0];
         const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
         
         if (dropTarget && dropTarget.classList.contains('ficha') && dropTarget.id !== fichaObj.id) {
-            moverFichaEnAtril(fichaObj.id, dropTarget.id);
+            const targetZona = dropTarget.dataset.zona;
+            const targetIndex = dropTarget.dataset.index !== "null" ? parseInt(dropTarget.dataset.index) : null;
+            procesarMovimiento(fichaObj.id, zona, indexGrupo, dropTarget.id, targetZona, targetIndex);
         } else {
-            renderizarAtril(); 
+            renderizarAtril(); renderizarMesas(); 
         }
+        draggedFichaId = null;
     });
 }
 
-function moverFichaEnAtril(idOrigen, idDestino) {
-    if (idOrigen === idDestino) return;
-    const indexOrigen = manoJugador1.findIndex(f => f.id === idOrigen);
-    const indexDestino = manoJugador1.findIndex(f => f.id === idDestino);
+function procesarMovimiento(idOrigen, zonaOrigen, indexOrigen, idDestino, zonaDestino, indexDestino) {
+    // Solo permitimos mover dentro de la misma zona y grupo (Mano -> Mano) o (Mesa1 -> Mesa1)
+    if (zonaOrigen !== zonaDestino || indexOrigen !== indexDestino) return;
+
+    let arrayFichas = zonaOrigen === 'mano' ? manoJugador1 : mesaMia[indexOrigen];
+    const iOrigen = arrayFichas.findIndex(f => f.id === idOrigen);
+    const iDestino = arrayFichas.findIndex(f => f.id === idDestino);
     
-    if (indexOrigen > -1 && indexDestino > -1) {
-        const [fichaMovida] = manoJugador1.splice(indexOrigen, 1);
-        manoJugador1.splice(indexDestino, 0, fichaMovida);
-        renderizarAtril();
-        db.ref(`burako_salas/${roomCode}/fichas/${myRole}`).set(manoJugador1);
+    if (iOrigen > -1 && iDestino > -1) {
+        const [ficha] = arrayFichas.splice(iOrigen, 1);
+        arrayFichas.splice(iDestino, 0, ficha);
+        
+        // Guardado silencioso
+        if (zonaOrigen === 'mano') db.ref(`burako_salas/${roomCode}/fichas/${myRole}`).set(manoJugador1);
+        else db.ref(`burako_salas/${roomCode}/mesa/${myRole}`).set(mesaMia);
+        
+        renderizarAtril(); renderizarMesas();
     }
 }
 
 // ========================================================
-// 3. JUEZ MATEMÁTICO Y EL MUERTO
+// 3. JUEZ MATEMÁTICO AVANZADO Y EL MUERTO
 // ========================================================
 function esMiTurno() {
     if (turnoActual !== myRole) { alert("¡Paciencia! Aún no es tu turno."); return false; }
@@ -213,57 +214,64 @@ function esMiTurno() {
 }
 
 function verificarMuerto() {
-    // Si me quedo sin fichas y todavía no usé el muerto
     if (manoJugador1.length === 0 && estadoMuertos[myRole] === false) {
         alert("¡TE HAS IDO AL MUERTO! 💀");
-        manoJugador1 = [...muertoMio]; // Agarramos las 11 de reserva
+        manoJugador1 = [...muertoMio]; 
         estadoMuertos[myRole] = true;
-        
-        db.ref(`burako_salas/${roomCode}`).update({
-            [`fichas/${myRole}`]: manoJugador1,
-            [`estadoMuertos/${myRole}`]: true
-        });
+        db.ref(`burako_salas/${roomCode}`).update({ [`fichas/${myRole}`]: manoJugador1, [`estadoMuertos/${myRole}`]: true });
         renderizarAtril();
     }
 }
 
+// Validador inteligente: Sabe diferenciar un 2 natural de un 2 comodín
 function esJuegoValido(fichas) {
     if (fichas.length < 3) return false;
-    const comodines = fichas.filter(f => f.color === 'comodin' || f.numero === 2);
-    const regulares = fichas.filter(f => f.color !== 'comodin' && f.numero !== 2);
 
-    if (regulares.length === 0) return false;
-    if (comodines.length > 1) return false; 
+    let comodinesPuros = fichas.filter(f => f.color === 'comodin');
+    if (comodinesPuros.length > 1) return false;
 
-    const esPierna = regulares.every(f => f.numero === regulares[0].numero);
-    if (esPierna) return true;
+    // Chequeo de Pierna
+    let sinComodines = fichas.filter(f => f.color !== 'comodin' && f.numero !== 2);
+    if (fichas.every(f => f.numero === 2 && f.color !== 'comodin')) return true; // Pierna de 2s
+    if (sinComodines.length > 0 && fichas.filter(f => f.color === 'comodin' || f.numero === 2).length <= 1) {
+        if (sinComodines.every(f => f.numero === sinComodines[0].numero)) return true;
+    }
 
-    const mismoColor = regulares.every(f => f.color === regulares[0].color);
-    if (!mismoColor) return false;
+    // Chequeo de Escalera
+    let colorFichas = fichas.filter(f => f.color !== 'comodin');
+    if (colorFichas.length === 0) return false;
+    let colorEscalera = colorFichas[0].color;
+    if (!colorFichas.every(f => f.color === colorEscalera)) return false; // Todos del mismo color
 
-    const numeros = regulares.map(f => f.numero);
-    if (new Set(numeros).size !== numeros.length) return false;
+    // Escenario A: Los números 2 actúan como COMODINES
+    let regA = fichas.filter(f => f.color !== 'comodin' && f.numero !== 2);
+    let comA = fichas.filter(f => f.color === 'comodin' || f.numero === 2);
+    
+    // Escenario B: Los números 2 del MISMO COLOR actúan como NATURALES
+    let regB = fichas.filter(f => f.color !== 'comodin' && !(f.numero === 2 && f.color !== colorEscalera));
+    let comB = fichas.filter(f => f.color === 'comodin' || (f.numero === 2 && f.color !== colorEscalera));
 
-    function comprobarHuecos(arr) {
-        arr.sort((a, b) => a - b);
+    function validarEscaleraMatematica(regs, coms) {
+        if (coms.length > 1) return false;
+        let nums = regs.map(f => f.numero);
+        if (new Set(nums).size !== nums.length) return false; // Sin duplicados
+        
+        nums.sort((a,b) => a - b);
         let huecos = 0;
-        for (let i = 0; i < arr.length - 1; i++) { huecos += (arr[i+1] - arr[i] - 1); }
-        return huecos <= comodines.length;
+        for(let i=0; i<nums.length-1; i++) huecos += (nums[i+1] - nums[i] - 1);
+        if (huecos <= coms.length) return true;
+
+        // Comprobar con As (1) funcionando como 14
+        if (nums.includes(1)) {
+            let numsHigh = nums.map(n => n === 1 ? 14 : n).sort((a,b)=>a-b);
+            huecos = 0;
+            for(let i=0; i<numsHigh.length-1; i++) huecos += (numsHigh[i+1] - numsHigh[i] - 1);
+            if (huecos <= coms.length) return true;
+        }
+        return false;
     }
 
-    if (comprobarHuecos([...numeros])) return true;
-    if (numeros.includes(1)) {
-        if (comprobarHuecos(numeros.map(n => n === 1 ? 14 : n))) return true;
-    }
-    return false;
-}
-
-function ordenarFichas(a, b) {
-    let numA = a.numero === 1 ? 14 : a.numero; 
-    let numB = b.numero === 1 ? 14 : b.numero;
-    if(a.color === 'comodin') return 1; 
-    if(b.color === 'comodin') return -1;
-    return numA - numB;
+    return validarEscaleraMatematica(regA, comA) || validarEscaleraMatematica(regB, comB);
 }
 
 function limpiarSeleccion() {
@@ -287,9 +295,7 @@ function robarDelPozo() {
     manoJugador1.push(pozo.shift()); 
     limpiarSeleccion(); renderizarAtril();
 
-    db.ref(`burako_salas/${roomCode}`).update({
-        'fichas/pozo': pozo, [`fichas/${myRole}`]: manoJugador1, faseTurno: 'jugar'
-    });
+    db.ref(`burako_salas/${roomCode}`).update({ 'fichas/pozo': pozo, [`fichas/${myRole}`]: manoJugador1, faseTurno: 'jugar' });
 }
 
 function robarDelDescarte() {
@@ -297,13 +303,10 @@ function robarDelDescarte() {
     if (faseTurno !== 'robar') { alert("Ya robaste. Ahora baja juegos o descarta."); return; }
     if (descarte.length === 0) return;
 
-    manoJugador1.push(...descarte); 
-    descarte = []; 
+    manoJugador1.push(...descarte); descarte = []; 
     limpiarSeleccion(); renderizarAtril(); renderizarDescarte();
 
-    db.ref(`burako_salas/${roomCode}`).update({
-        'fichas/descarte': descarte, [`fichas/${myRole}`]: manoJugador1, faseTurno: 'jugar'
-    });
+    db.ref(`burako_salas/${roomCode}`).update({ 'fichas/descarte': descarte, [`fichas/${myRole}`]: manoJugador1, faseTurno: 'jugar' });
 }
 
 function bajarJuego() {
@@ -316,20 +319,15 @@ function bajarJuego() {
         limpiarSeleccion(); return;
     }
 
-    fichasSeleccionadas.sort(ordenarFichas);
-    fichasSeleccionadas.forEach(fichaObj => {
-        manoJugador1 = manoJugador1.filter(f => f.id !== fichaObj.id);
-    });
-
+    // Orden inicial aproximado (luego el usuario lo acomoda arrastrando si quiere)
+    fichasSeleccionadas.sort((a, b) => (a.numero === 1 ? 14 : a.numero) - (b.numero === 1 ? 14 : b.numero));
+    
+    fichasSeleccionadas.forEach(fichaObj => manoJugador1 = manoJugador1.filter(f => f.id !== fichaObj.id));
     mesaMia.push([...fichasSeleccionadas]);
     fichasSeleccionadas = [];
     
-    verificarMuerto(); // Verificamos si bajando este juego te quedaste en 0
-
-    db.ref(`burako_salas/${roomCode}`).update({
-        [`mesa/${myRole}`]: mesaMia,
-        [`fichas/${myRole}`]: manoJugador1
-    });
+    verificarMuerto(); 
+    db.ref(`burako_salas/${roomCode}`).update({ [`mesa/${myRole}`]: mesaMia, [`fichas/${myRole}`]: manoJugador1 });
 }
 
 function intentarAgregarFichas(indexGrupo) {
@@ -339,24 +337,18 @@ function intentarAgregarFichas(indexGrupo) {
     const combinacion = [...mesaMia[indexGrupo], ...fichasSeleccionadas];
 
     if (!esJuegoValido(combinacion)) {
-        alert("Esas fichas no encajan en este juego.");
+        alert("Esas fichas rompen la regla del juego (recuerda que un juego solo admite 1 comodín).");
         limpiarSeleccion(); return;
     }
 
-    combinacion.sort(ordenarFichas);
-    fichasSeleccionadas.forEach(fichaObj => {
-        manoJugador1 = manoJugador1.filter(f => f.id !== fichaObj.id);
-    });
-
+    fichasSeleccionadas.forEach(fichaObj => manoJugador1 = manoJugador1.filter(f => f.id !== fichaObj.id));
+    
+    // Las nuevas fichas se agregan al final, el jugador luego las arrastra donde quiera
     mesaMia[indexGrupo] = combinacion;
     fichasSeleccionadas = [];
+    verificarMuerto(); 
 
-    verificarMuerto(); // Verificamos si te quedaste en 0
-
-    db.ref(`burako_salas/${roomCode}`).update({
-        [`mesa/${myRole}`]: mesaMia,
-        [`fichas/${myRole}`]: manoJugador1
-    });
+    db.ref(`burako_salas/${roomCode}`).update({ [`mesa/${myRole}`]: mesaMia, [`fichas/${myRole}`]: manoJugador1 });
 }
 
 function descartarFicha() {
@@ -369,15 +361,11 @@ function descartarFicha() {
     descarte.push(fichaADescartar); 
     fichasSeleccionadas = [];
     
-    verificarMuerto(); // Verificamos si te fuiste al muerto "con descarte"
-    
+    verificarMuerto(); 
     const proximoTurno = myRole === 'host' ? 'guest' : 'host';
 
     db.ref(`burako_salas/${roomCode}`).update({
-        'fichas/descarte': descarte,
-        [`fichas/${myRole}`]: manoJugador1,
-        turnoActual: proximoTurno,
-        faseTurno: 'robar'
+        'fichas/descarte': descarte, [`fichas/${myRole}`]: manoJugador1, turnoActual: proximoTurno, faseTurno: 'robar'
     });
 }
 
@@ -392,9 +380,7 @@ const purificarArray = (data) => {
 
 db.ref('burako_salas').on('value', (snapshot) => {
     if (roomCode) return; 
-    const salas = snapshot.val() || {};
-    const listaUI = document.getElementById('rooms-list');
-    if (!listaUI) return;
+    const salas = snapshot.val() || {}; const listaUI = document.getElementById('rooms-list'); if (!listaUI) return;
     listaUI.innerHTML = ""; let salasDisponibles = 0; const ahora = Date.now();
     for (const [codigo, data] of Object.entries(salas)) {
         if (data.estado === "esperando" && (ahora - data.timestamp > 600000)) { db.ref(`burako_salas/${codigo}`).remove(); continue; }
@@ -409,13 +395,12 @@ db.ref('burako_salas').on('value', (snapshot) => {
 });
 
 document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
-    const inputName = document.getElementById('my-name');
-    myName = inputName.value.trim();
+    myName = document.getElementById('my-name').value.trim();
     if (!myName) { alert("Ingresa tu nombre."); return; }
     
     myRole = 'host'; roomCode = Math.random().toString(36).substring(2, 6).toUpperCase(); 
 
-    const fichasOrdenadas = generarFichas(); mazo = mezclar(fichasOrdenadas);
+    const fOrd = generarFichas(); mazo = mezclar(fOrd);
     const manoH = mazo.splice(0, 11); const manoG = mazo.splice(0, 11);
     const m1 = mazo.splice(0, 11); const m2 = mazo.splice(0, 11); pozo = [...mazo];
 
@@ -427,8 +412,7 @@ document.getElementById('btn-crear-sala')?.addEventListener('click', () => {
         turnoActual: Math.random() > 0.5 ? 'host' : 'guest', faseTurno: 'robar', targetScore: targetEl ? parseInt(targetEl.value) : 3000, 
         scores: { host: 0, guest: 0 }, timestamp: Date.now(),
         fichas: { host: manoH, guest: manoG, muerto1: m1, muerto2: m2, pozo: pozo, descarte: [] },
-        mesa: { host: [], guest: [] },
-        estadoMuertos: { host: false, guest: false }
+        mesa: { host: [], guest: [] }, estadoMuertos: { host: false, guest: false }
     });
 
     salaRef.onDisconnect().remove();
@@ -468,27 +452,19 @@ function escucharPartida() {
             }
         }
 
-        // Descarga y asignación de variables
         estadoMuertos = data.estadoMuertos || { host: false, guest: false };
         manoJugador1 = myRole === 'host' ? purificarArray(data.fichas?.host) : purificarArray(data.fichas?.guest);
-        pozo = purificarArray(data.fichas?.pozo);
-        descarte = purificarArray(data.fichas?.descarte);
-        
+        pozo = purificarArray(data.fichas?.pozo); descarte = purificarArray(data.fichas?.descarte);
         muertoMio = myRole === 'host' ? purificarArray(data.fichas?.muerto1) : purificarArray(data.fichas?.muerto2);
 
-        // Mesas separadas
-        const mesaHostCruda = purificarArray(data.mesa?.host);
-        const mesaGuestCruda = purificarArray(data.mesa?.guest);
+        const mesaHostCruda = purificarArray(data.mesa?.host); const mesaGuestCruda = purificarArray(data.mesa?.guest);
         
         if (myRole === 'host') {
-            mesaMia = mesaHostCruda.map(g => purificarArray(g));
-            mesaRival = mesaGuestCruda.map(g => purificarArray(g));
+            mesaMia = mesaHostCruda.map(g => purificarArray(g)); mesaRival = mesaGuestCruda.map(g => purificarArray(g));
         } else {
-            mesaMia = mesaGuestCruda.map(g => purificarArray(g));
-            mesaRival = mesaHostCruda.map(g => purificarArray(g));
+            mesaMia = mesaGuestCruda.map(g => purificarArray(g)); mesaRival = mesaHostCruda.map(g => purificarArray(g));
         }
 
-        // UI del Muerto del Rival
         const rivalRole = myRole === 'host' ? 'guest' : 'host';
         const rivalTomado = estadoMuertos[rivalRole] ? " [M💀]" : "";
         document.querySelector('.atril-rival .nombre-jugador').innerText = `${rivalName || 'Rival'} ${rivalTomado}`;
