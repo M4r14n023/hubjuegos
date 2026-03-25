@@ -193,3 +193,10 @@ button:active { transform: scale(0.95) translate(2px, 2px); box-shadow: 1px 1px 
 @media (max-width: 600px) {
     .btn-back-hub { top: 10px; left: 10px; padding: 5px 10px; font-size: 0.8rem; }
 }
+/* Resguardo anti-corte en celulares */
+#zona-jugador {
+    flex-shrink: 0;
+}
+#game-container {
+    overflow-y: auto;
+}
