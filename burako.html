@@ -65,13 +65,19 @@
                 <p class="nombre-jugador">Rival (Esperando...)</p>
             </div>
 
-            <div id="zona-central">
+            <div id="zona-central" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1;">
                 <div class="panel-robo">
                     <div id="pozo" class="ficha reverso">Pozo</div>
                     <div id="descarte" class="espacio-vacio">Descarte</div>
                 </div>
-                <div id="juegos-bajados">
-                    <p style="color: rgba(0, 255, 255, 0.5); text-align: center; width: 100%; font-family: monospace;">[ ZONA DE CANASTAS ]</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; flex-grow: 1;">
+                    <div id="mis-juegos" style="flex: 1; border: 2px solid var(--neon-green); background-color: rgba(0, 255, 102, 0.05); border-radius: 10px; padding: 10px; overflow-y: auto;">
+                        <p style="color: var(--neon-green); text-align: center; font-family: monospace; font-size: 0.8rem; margin-bottom: 10px;">[ MIS JUEGOS ]</p>
+                    </div>
+                    <div id="juegos-rival" style="flex: 1; border: 2px dashed #ff3333; background-color: rgba(255, 51, 51, 0.05); border-radius: 10px; padding: 10px; overflow-y: auto;">
+                        <p style="color: #ff3333; text-align: center; font-family: monospace; font-size: 0.8rem; margin-bottom: 10px;">[ JUEGOS RIVAL ]</p>
+                    </div>
                 </div>
             </div>
 
